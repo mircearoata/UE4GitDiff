@@ -1,4 +1,4 @@
-package main
+package unrealengine
 
 import (
 	"github.com/pkg/errors"
