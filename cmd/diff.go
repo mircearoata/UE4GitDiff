@@ -9,6 +9,39 @@ import (
 	"path/filepath"
 )
 
+func discoverUProjectFromStartPath(startPath string) (string, error) {
+	for currentPath := startPath; filepath.Dir(currentPath) != currentPath; currentPath = filepath.Dir(currentPath) {
+		matches, err := filepath.Glob(filepath.Join(currentPath, "*.uproject"))
+		if err == nil && len(matches) > 0 {
+			return matches[0], nil
+		}
+	}
+	return "", errors.New("no uproject found")
+}
+
+func discoverUProject() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get current working directory")
+	}
+
+	uproject, err := discoverUProjectFromStartPath(cwd)
+	if err == nil {
+		return uproject, nil
+	}
+
+	gitDir, ok := os.LookupEnv("GIT_DIR")
+	if !ok {
+		return "", errors.New("GIT_DIR environment variable not set")
+	}
+	uproject, err = discoverUProjectFromStartPath(gitDir)
+	if err == nil {
+		return uproject, nil
+	}
+
+	return "", errors.Wrap(err, "failed to discover uproject")
+}
+
 var diffCmd = &cobra.Command{
 	Use:   "diff",
 	Short: "Runs UE4Editor diffing the two assets",
@@ -19,7 +52,10 @@ var diffCmd = &cobra.Command{
 			return errors.Wrap(err, "failed to get current working directory")
 		}
 
-		uproject := filepath.Join(cwd, "FactoryGame.uproject")
+		uproject, err := discoverUProject()
+		if err != nil {
+			return errors.Wrap(err, "failed to discover uproject")
+		}
 
 		oldFile, err := cmd.Flags().GetString("old")
 		if err != nil {
