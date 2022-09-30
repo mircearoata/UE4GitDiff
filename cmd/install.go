@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 )
 
 var installCmd = &cobra.Command{
@@ -28,6 +29,13 @@ var installCmd = &cobra.Command{
 		err = exec.Command("git", "config", "--global", "difftool.ue4.cmd", difftoolCmd).Run()
 		if err != nil {
 			return errors.Wrap(err, "failed to add difftool")
+		}
+
+		mergetoolCmd := fmt.Sprintf(`%s merge --local="$LOCAL" --remote="$REMOTE" --base="$BASE" --result="$MERGED"`, filepath.ToSlash(ex))
+
+		err = exec.Command("git", "config", "--global", "mergetool.ue4.cmd", mergetoolCmd).Run()
+		if err != nil {
+			return errors.Wrap(err, "failed to add mergetool")
 		}
 
 		return nil
